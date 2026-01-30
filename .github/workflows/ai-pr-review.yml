@@ -127,8 +127,9 @@ jobs:
 
           while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
             # Get all check runs for this commit, excluding our own workflow
+            # Filter out any check from the AI PR Review workflow
             CHECKS=$(gh api repos/${{ github.repository }}/commits/$SHA/check-runs \
-              --jq '[.check_runs[] | select(.name != "review" and .name != "should-review")]')
+              --jq '[.check_runs[] | select((.name | contains("AI PR Review") | not) and (.name | contains("review / review") | not) and .name != "review" and .name != "should-review")]')
 
             TOTAL=$(echo "$CHECKS" | jq 'length')
             COMPLETED=$(echo "$CHECKS" | jq '[.[] | select(.status == "completed")] | length')
