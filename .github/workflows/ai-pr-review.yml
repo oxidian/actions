@@ -250,6 +250,17 @@ jobs:
           echo "$CUSTOM_INSTRUCTIONS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      # Checkout actions repo to access the template
+      - name: Checkout actions repo for template
+        if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
+        uses: actions/checkout@v6
+        with:
+          repository: oxidian/actions
+          path: .github/actions-templates
+          sparse-checkout: |
+            templates
+          sparse-checkout-cone-mode: false
+
       # Render review prompt from template
       - name: Render review prompt
         if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
@@ -264,7 +275,7 @@ jobs:
         run: |
           # Read template and substitute variables using bash
           # Note: We use eval with a here-doc to enable bash parameter expansion (${VAR:+...})
-          TEMPLATE=$(cat templates/review-prompt.md)
+          TEMPLATE=$(cat .github/actions-templates/templates/review-prompt.md)
           RENDERED_PROMPT=$(eval "cat <<TEMPLATE_EOF
           $TEMPLATE
           TEMPLATE_EOF
