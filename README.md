@@ -53,7 +53,7 @@ concurrency:
 
 jobs:
   review:
-    uses: oxidian/actions/gh/ai-pr-review.yml@main
+    uses: oxidian/actions/ai-pr-review.yml@main
     with:
       # Required: Your OpenAI API endpoint
       responses-api-endpoint: "https://your-azure-openai.openai.azure.com/openai/v1/responses"
