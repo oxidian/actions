@@ -8,9 +8,10 @@ on:
         required: true
         type: string
       model:
-        description: OpenAI model to use (e.g., gpt-5.2-codex)
-        required: true
+        description: OpenAI model to use
+        required: false
         type: string
+        default: gpt-5.2-codex
       effort:
         description: Effort level for the review (low, medium, high, xhigh)
         required: false

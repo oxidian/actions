@@ -16,8 +16,6 @@ jobs:
     uses: ./.github/workflows/ai-pr-review.yml
     with:
       responses-api-endpoint: ${{ vars.OPENAI_API_ENDPOINT }}
-      model: ${{ vars.OPENAI_MODEL }}
-      effort: xhigh
-      ci-timeout-minutes: 30
+      ci-timeout-minutes: 3
     secrets:
       openai-api-key: ${{ secrets.OPENAI_API_KEY }}
