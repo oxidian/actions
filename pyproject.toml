@@ -6,6 +6,7 @@ requires-python = ">=3.14"
 [dependency-groups]
 dev = [
     "actionlint-py>=1.7.10.24",
+    "pre-commit>=4.5.1",
     "yamlfix>=1.19.1",
     "zizmor>=1.22.0",
 ]

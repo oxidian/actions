@@ -1,0 +1,10 @@
+default_stages: [pre-commit]
+
+repos:
+  - repo: local
+    hooks:
+      - id: checks
+        name: Format and lint
+        entry: bash -lc 'make check'
+        language: system
+        pass_filenames: false
