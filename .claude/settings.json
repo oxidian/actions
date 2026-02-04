@@ -1,4 +1,11 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(gh api:*)",
+      "Bash(gh repo view:*)",
+      "WebFetch(domain:github.com)"
+    ]
+  },
   "extraKnownMarketplaces": {
     "oxidian": {
       "source": {
