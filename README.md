@@ -128,7 +128,6 @@ jobs:
           responses-api-endpoint: "https://your-azure-openai.openai.azure.com/openai/v1/responses"
           model: "gpt-5.2-codex"
           pr-number: ${{ github.event.pull_request.number }}
-          trigger-description: "PR opened/ready"
 ```
 
 #### Action Inputs
@@ -141,13 +140,13 @@ jobs:
 | `effort` | No | `xhigh` | Effort level |
 | `pr-number` | Yes | - | PR number to review |
 | `custom-instructions` | No | `''` | Additional reviewer instructions |
-| `trigger-description` | No | `'composite action'` | Footer text describing what triggered the review |
 
 #### Action Outputs
 
 | Output | Description |
 |--------|-------------|
 | `review-json` | Raw JSON output from Codex |
+| `review` | Formatted review comment body (markdown) |
 | `correctness` | Verdict string (e.g. `"patch is correct"`) |
 | `confidence` | Confidence score |
 | `findings-count` | Number of findings |

@@ -197,9 +197,26 @@ jobs:
           echo "$CUSTOM_INSTRUCTIONS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      # Post "in progress" comment before starting the review
+      - name: Post started comment
+        if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: AI Review
+          number: ${{ github.event.pull_request.number || github.event.issue.number }}
+          message: |
+            ## AI Code Review
+
+            :hourglass_flowing_sand: **Review in progress...**
+
+            ---
+            *Triggered by: ${{ github.event_name == 'issue_comment' && 'manual /review command' || 'PR opened/ready' }}*
+            <!-- AI_REVIEW_STATE: in_progress -->
+
       # Run the composite action for the actual review
       - name: Run AI review
         if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
+        id: ai_review
         uses: oxidian/actions/ai-review@main
         with:
           openai-api-key: ${{ secrets.openai-api-key }}
@@ -208,4 +225,37 @@ jobs:
           effort: ${{ inputs.effort }}
           pr-number: ${{ github.event.pull_request.number || github.event.issue.number }}
           custom-instructions: ${{ steps.parse.outputs.custom_instructions }}
-          trigger-description: ${{ github.event_name == 'issue_comment' && 'manual /review command' || 'PR opened/ready' }}
+
+      # Post success comment
+      - name: Post review comment
+        if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: AI Review
+          number: ${{ github.event.pull_request.number || github.event.issue.number }}
+          message: |
+            ## AI Code Review
+
+            ${{ steps.ai_review.outputs.review }}
+
+            ---
+            *Triggered by: ${{ github.event_name == 'issue_comment' && 'manual /review command' || 'PR opened/ready' }}*
+            <!-- AI_REVIEW_STATE: completed -->
+
+      # Post failure comment (only runs if any previous step failed)
+      - name: Post failure comment
+        if: failure() && (github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true')
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: AI Review
+          number: ${{ github.event.pull_request.number || github.event.issue.number }}
+          message: |
+            ## AI Code Review
+
+            :x: **Review failed**
+
+            The AI review encountered an error. Check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+
+            ---
+            *Triggered by: ${{ github.event_name == 'issue_comment' && 'manual /review command' || 'PR opened/ready' }}*
+            <!-- AI_REVIEW_STATE: error -->

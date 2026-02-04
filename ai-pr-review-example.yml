@@ -60,4 +60,3 @@ jobs:
   #         responses-api-endpoint: "https://your-azure-openai.openai.azure.com/openai/v1/responses"
   #         model: "gpt-5.2-codex"
   #         pr-number: ${{ github.event.pull_request.number }}
-  #         trigger-description: "PR opened/ready"

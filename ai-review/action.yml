@@ -1,8 +1,8 @@
 name: AI PR Review
 description: >
   Composite action that performs an AI-powered code review on a pull request
-  using OpenAI Codex. Posts a sticky comment with findings, verdict, and
-  confidence score.
+  using OpenAI Codex. Returns structured review results — the caller is
+  responsible for posting comments.
 
 inputs:
   openai-api-key:
@@ -25,15 +25,14 @@ inputs:
     description: 'Additional reviewer instructions appended to the prompt'
     required: false
     default: ''
-  trigger-description:
-    description: 'Footer text describing what triggered the review'
-    required: false
-    default: 'composite action'
 
 outputs:
   review-json:
     description: 'Raw JSON output from Codex'
     value: ${{ steps.codex.outputs.final-message }}
+  review:
+    description: 'Formatted review comment body (markdown)'
+    value: ${{ steps.format_comment.outputs.comment }}
   correctness:
     description: 'Verdict string (e.g. "patch is correct")'
     value: ${{ steps.parse_review.outputs.correctness }}
@@ -47,21 +46,6 @@ outputs:
 runs:
   using: composite
   steps:
-    # Post "started" comment immediately
-    - name: Post started comment
-      uses: marocchino/sticky-pull-request-comment@v2
-      with:
-        header: AI Review
-        number: ${{ inputs.pr-number }}
-        message: |
-          ## AI Code Review
-
-          :hourglass_flowing_sand: **Review in progress...**
-
-          ---
-          *Triggered by: ${{ inputs.trigger-description }}*
-          <!-- AI_REVIEW_STATE: in_progress -->
-
     # Get PR metadata for accurate diff
     - name: Get PR metadata
       id: pr_meta
@@ -253,35 +237,3 @@ runs:
         echo "$COMMENT" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
-    # Post success comment
-    - name: Post success comment
-      uses: marocchino/sticky-pull-request-comment@v2
-      with:
-        header: AI Review
-        number: ${{ inputs.pr-number }}
-        message: |
-          ## AI Code Review
-
-          ${{ steps.format_comment.outputs.comment }}
-
-          ---
-          *Triggered by: ${{ inputs.trigger-description }}*
-          <!-- AI_REVIEW_STATE: completed -->
-
-    # Post failure comment (only runs if any previous step failed)
-    - name: Post failure comment
-      if: failure()
-      uses: marocchino/sticky-pull-request-comment@v2
-      with:
-        header: AI Review
-        number: ${{ inputs.pr-number }}
-        message: |
-          ## AI Code Review
-
-          :x: **Review failed**
-
-          The AI review encountered an error. Check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
-
-          ---
-          *Triggered by: ${{ inputs.trigger-description }}*
-          <!-- AI_REVIEW_STATE: error -->
