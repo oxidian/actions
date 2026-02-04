@@ -5,16 +5,16 @@ description: >
 
 inputs:
   pr-number:
-    description: 'PR number to cancel reviews for'
+    description: PR number to cancel reviews for
     required: true
   workflow-name:
-    description: 'Name of the AI review workflow file'
+    description: Name of the AI review workflow file
     required: false
-    default: 'ai-pr-review.yml'
+    default: ai-pr-review.yml
 
 outputs:
   cancelled-count:
-    description: 'Number of workflow runs cancelled'
+    description: Number of workflow runs cancelled
     value: ${{ steps.cancel.outputs.cancelled_count }}
 
 runs:
@@ -27,7 +27,7 @@ runs:
         GH_TOKEN: ${{ github.token }}
         PR_NUMBER: ${{ inputs.pr-number }}
         WORKFLOW_NAME: ${{ inputs.workflow-name }}
-      run: |
+      run: |-
         echo "Looking for AI review workflow runs for PR #$PR_NUMBER..."
 
         # Get workflow runs for this PR

@@ -4,26 +4,26 @@ on:
   workflow_call:
     inputs:
       responses-api-endpoint:
-        description: 'OpenAI API endpoint URL'
+        description: OpenAI API endpoint URL
         required: true
         type: string
       model:
-        description: 'OpenAI model to use (e.g., gpt-5.2-codex)'
+        description: OpenAI model to use (e.g., gpt-5.2-codex)
         required: true
         type: string
       effort:
-        description: 'Effort level for the review (low, medium, high, xhigh)'
+        description: Effort level for the review (low, medium, high, xhigh)
         required: false
         type: string
-        default: 'xhigh'
+        default: xhigh
       ci-timeout-minutes:
-        description: 'Maximum minutes to wait for CI checks to pass'
+        description: Maximum minutes to wait for CI checks to pass
         required: false
         type: number
         default: 30
     secrets:
       openai-api-key:
-        description: 'OpenAI API key'
+        description: OpenAI API key
         required: true
 
 # Trigger on PR events from the caller workflow
@@ -278,7 +278,7 @@ jobs:
         with:
           header: AI Review
           number: ${{ github.event.pull_request.number || github.event.issue.number }}
-          message: |
+          message: |-
             ## AI Code Review
 
             :x: **Review failed**
