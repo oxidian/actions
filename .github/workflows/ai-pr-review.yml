@@ -43,8 +43,27 @@ jobs:
       (github.event_name == 'issue_comment' && github.event.issue.pull_request && startsWith(github.event.comment.body, '/review'))
     runs-on: ubuntu-latest
     outputs:
-      should_run: ${{ steps.check.outputs.should_run }}
+      should_run: ${{ steps.check.outputs.should_run == 'true' && steps.permissions.outputs.has_access == 'true' }}
     steps:
+      - name: Check actor permissions
+        id: permissions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          PERMISSION=$(gh api repos/${{ github.repository }}/collaborators/$ACTOR/permission \
+            --jq '.permission')
+
+          echo "User $ACTOR has permission: $PERMISSION"
+
+          if [[ "$PERMISSION" == "admin" || "$PERMISSION" == "write" ]]; then
+            echo "has_access=true" >> $GITHUB_OUTPUT
+          else
+            echo "::error::User $ACTOR does not have write access (permission: $PERMISSION)."
+            echo "has_access=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
       - name: Check if review should run
         id: check
         env:
