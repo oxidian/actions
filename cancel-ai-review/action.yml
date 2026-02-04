@@ -31,7 +31,7 @@ runs:
         echo "Looking for AI review workflow runs for PR #$PR_NUMBER..."
 
         # Get workflow runs for this PR
-        RUNS=$(gh api "repos/${{ github.repository }}/actions/workflows/$WORKFLOW_NAME/runs?event=pull_request" \
+        RUNS=$(gh api "repos/${{ github.repository }}/actions/workflows/$WORKFLOW_NAME/runs" \
           --jq "[.workflow_runs[] | select(.pull_requests[].number == $PR_NUMBER)]")
 
         RUN_COUNT=$(echo "$RUNS" | jq 'length')
