@@ -96,6 +96,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      # React to /review comment so the user knows we saw it
+      - name: Acknowledge /review command
+        if: github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
+            -f content='+1' --silent
+
       # Wait for CI checks to pass before running review (skip for manual /review)
       - name: Wait for CI checks
         id: ci_check
