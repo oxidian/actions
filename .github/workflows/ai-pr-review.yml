@@ -217,7 +217,7 @@ jobs:
       - name: Run AI review
         if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
         id: ai_review
-        uses: ./ai-review
+        uses: oxidian/actions/ai-review@refactor/composite-action
         with:
           openai-api-key: ${{ secrets.openai-api-key }}
           responses-api-endpoint: ${{ inputs.responses-api-endpoint }}
