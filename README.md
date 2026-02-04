@@ -25,7 +25,16 @@ A reusable GitHub Actions workflow that provides automated AI-powered code revie
 
 ## Usage
 
-### Step 1: Set Up Secrets
+There are two ways to use this action:
+
+1. **Reusable Workflow** — recommended for Oxidian org repos. Includes CI waiting, should-review gate, `/review` command parsing.
+2. **Composite Action** — for external users or custom workflows. You control checkout, CI gating, and trigger logic.
+
+---
+
+### Option A: Reusable Workflow
+
+#### Step 1: Set Up Secrets
 
 Add your OpenAI API key to your repository secrets:
 
@@ -34,7 +43,7 @@ Add your OpenAI API key to your repository secrets:
 3. Name: `OPENAI_API_KEY`
 4. Value: Your OpenAI API key
 
-### Step 2: Create Workflow File
+#### Step 2: Create Workflow File
 
 Create `.github/workflows/ai-pr-review.yml` in your repository:
 
@@ -53,45 +62,17 @@ concurrency:
 
 jobs:
   review:
-    uses: oxidian/actions/ai-pr-review.yml@main
+    uses: oxidian/actions/.github/workflows/ai-pr-review.yml@main
     with:
-      # Required: Your OpenAI API endpoint
       responses-api-endpoint: "https://your-azure-openai.openai.azure.com/openai/v1/responses"
-
-      # Required: The model to use for reviews
-      # Use gpt-5.2-codex for best code review results
       model: "gpt-5.2-codex"
-
-      # Optional: Effort level (low, medium, high, xhigh)
       effort: "xhigh"
-
-      # Optional: Maximum minutes to wait for CI checks (default: 30)
       ci-timeout-minutes: 30
     secrets:
       openai-api-key: ${{ secrets.OPENAI_API_KEY }}
 ```
 
-**Note:** Dependabot PRs are always excluded from AI review. Use the `/review` command to manually trigger a review if needed.
-
-### Step 3: Configure for Your OpenAI Setup
-
-Update the `responses-api-endpoint` and `model` to match your OpenAI or Azure OpenAI configuration:
-
-**For Azure OpenAI:**
-```yaml
-responses-api-endpoint: "https://your-resource-name.openai.azure.com/openai/v1/responses"
-model: "gpt-5.2-codex"  # or your deployed model name
-```
-
-**For OpenAI API:**
-```yaml
-responses-api-endpoint: "https://api.openai.com/v1/responses"
-model: "gpt-5.2-codex"  # or your preferred model
-```
-
-## Configuration Options
-
-### Inputs
+#### Workflow Inputs
 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
@@ -100,13 +81,78 @@ model: "gpt-5.2-codex"  # or your preferred model
 | `effort` | No | `xhigh` | Review effort level: `low`, `medium`, `high`, or `xhigh` |
 | `ci-timeout-minutes` | No | `30` | Max minutes to wait for CI checks to pass |
 
-**Note:** Dependabot PRs are always excluded from automatic reviews. You can manually trigger a review on any PR (including dependabot PRs) using the `/review` comment command.
-
-### Secrets
+#### Workflow Secrets
 
 | Secret | Required | Description |
 |--------|----------|-------------|
 | `openai-api-key` | Yes | Your OpenAI or Azure OpenAI API key |
+
+**Note:** Dependabot PRs are always excluded from automatic reviews. You can manually trigger a review on any PR (including dependabot PRs) using the `/review` comment command.
+
+---
+
+### Option B: Composite Action
+
+Use `oxidian/actions/ai-review@main` directly for full control over when and how the review runs.
+
+#### Prerequisites
+
+- Caller must run `actions/checkout@v6` with `fetch-depth: 0` before calling the action
+- Workflow needs `pull-requests: write` and `contents: read` permissions
+
+#### Example
+
+```yaml
+name: AI PR Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Run AI review
+        uses: oxidian/actions/ai-review@main
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          responses-api-endpoint: "https://your-azure-openai.openai.azure.com/openai/v1/responses"
+          model: "gpt-5.2-codex"
+          pr-number: ${{ github.event.pull_request.number }}
+          trigger-description: "PR opened/ready"
+```
+
+#### Action Inputs
+
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `openai-api-key` | Yes | - | OpenAI API key (passed as input since composite actions can't access secrets) |
+| `responses-api-endpoint` | Yes | - | OpenAI API endpoint URL |
+| `model` | Yes | - | Model name |
+| `effort` | No | `xhigh` | Effort level |
+| `pr-number` | Yes | - | PR number to review |
+| `custom-instructions` | No | `''` | Additional reviewer instructions |
+| `trigger-description` | No | `'composite action'` | Footer text describing what triggered the review |
+
+#### Action Outputs
+
+| Output | Description |
+|--------|-------------|
+| `review-json` | Raw JSON output from Codex |
+| `correctness` | Verdict string (e.g. `"patch is correct"`) |
+| `confidence` | Confidence score |
+| `findings-count` | Number of findings |
+
+---
 
 ## How It Works
 
@@ -141,6 +187,22 @@ The workflow tracks review state using HTML comments in PR comments:
 - `completed`: Review finished successfully
 - `error`: Review encountered an error
 
+## Configuration
+
+### For Azure OpenAI
+
+```yaml
+responses-api-endpoint: "https://your-resource-name.openai.azure.com/openai/v1/responses"
+model: "gpt-5.2-codex"  # or your deployed model name
+```
+
+### For OpenAI API
+
+```yaml
+responses-api-endpoint: "https://api.openai.com/v1/responses"
+model: "gpt-5.2-codex"  # or your preferred model
+```
+
 ## Priority Levels
 
 Findings are categorized by priority:
@@ -149,40 +211,6 @@ Findings are categorized by priority:
 - **P1**: Urgent, fix in next cycle (functional bugs, performance issues)
 - **P2**: Normal priority (minor bugs, edge cases, error handling)
 - **P3**: Low priority (code quality, tests, documentation)
-
-## Review Guidelines
-
-The workflow includes comprehensive review guidelines that cover:
-
-- Bug identification criteria
-- Security vulnerability detection
-- Test coverage expectations
-- Code quality standards
-- Comment formatting
-
-These can be customized by modifying the prompt in `ai-pr-review.yml`.
-
-## Advanced Customization
-
-### Repository-Specific Guidelines
-
-To add repository-specific review guidelines, you can:
-
-1. Create an `AGENTS.md` file in your repository with custom guidelines
-2. Modify the workflow prompt to reference this file
-3. The AI will prioritize repository-specific guidelines over defaults
-
-### Excluding Files or Directories
-
-The workflow reviews all changed files in a PR. To exclude certain patterns, modify the workflow to filter the `changed_files` list before passing to the AI.
-
-### Adjusting CI Wait Behavior
-
-To change how the workflow waits for CI:
-
-- Increase `ci-timeout-minutes` for slower CI pipelines
-- Remove the CI wait step entirely to review immediately (not recommended)
-- Add specific check names to exclude from CI wait logic
 
 ## Troubleshooting
 

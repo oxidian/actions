@@ -19,8 +19,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── Option A: Reusable workflow (recommended) ──────────
+  # Includes CI waiting, should-review gate, /review command
   review:
-    uses: oxidian/actions/ai-pr-review.yml@main
+    uses: oxidian/actions/.github/workflows/ai-pr-review.yml@main
     with:
       # Required: Your OpenAI API endpoint
       responses-api-endpoint: "https://your-azure-openai.openai.azure.com/openai/v1/responses"
@@ -36,3 +38,26 @@ jobs:
     secrets:
       # Required: Your OpenAI API key (add this to your repository secrets)
       openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+
+  # ── Option B: Direct composite action (for external / custom usage) ─────
+  # Gives full control — you handle checkout, CI gating, and trigger logic.
+  # Uncomment the block below and remove Option A above to use this pattern.
+  #
+  # review-direct:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     pull-requests: write
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #       with:
+  #         fetch-depth: 0
+  #
+  #     - name: Run AI review
+  #       uses: oxidian/actions/ai-review@main
+  #       with:
+  #         openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+  #         responses-api-endpoint: "https://your-azure-openai.openai.azure.com/openai/v1/responses"
+  #         model: "gpt-5.2-codex"
+  #         pr-number: ${{ github.event.pull_request.number }}
+  #         trigger-description: "PR opened/ready"

@@ -96,21 +96,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Post "started" comment immediately
-      - name: Post started comment
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: AI Review
-          number: ${{ github.event.pull_request.number || github.event.issue.number }}
-          message: |
-            ## AI Code Review
-
-            :hourglass_flowing_sand: **Review in progress...**
-
-            ---
-            *Triggered by: ${{ github.event_name == 'issue_comment' && 'manual /review command' || 'PR opened/ready' }}*
-            <!-- AI_REVIEW_STATE: in_progress -->
-
       # Wait for CI checks to pass before running review (skip for manual /review)
       - name: Wait for CI checks
         id: ci_check
@@ -180,7 +165,7 @@ jobs:
 
             ${{ steps.ci_check.outputs.failed_checks }}
 
-            Once CI passes, push a new commit to trigger the review automatically.
+            Pushing new commits will trigger the review automatically, once CI passes.
 
             ---
             *Triggered by: PR opened/ready*
@@ -192,44 +177,6 @@ jobs:
         run: gh pr checkout ${{ github.event.issue.number }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Get PR metadata for accurate diff
-      - name: Get PR metadata
-        if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
-        id: pr_meta
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
-        run: |
-          # Get PR details (title, body, base branch name, head SHA)
-          PR_DATA=$(gh pr view "$PR_NUMBER" --json baseRefName,headRefOid,title,body)
-
-          BASE_REF=$(echo "$PR_DATA" | jq -r '.baseRefName')
-          HEAD_SHA=$(echo "$PR_DATA" | jq -r '.headRefOid')
-          TITLE=$(echo "$PR_DATA" | jq -r '.title')
-          BODY=$(echo "$PR_DATA" | jq -r '.body // ""')
-
-          # Compute merge-base to avoid including unrelated changes when base branch advances
-          BASE_SHA=$(git merge-base origin/$BASE_REF $HEAD_SHA)
-
-          # Get all changed files with pagination (gh pr view --json files doesn't paginate)
-          CHANGED_FILES=$(gh api --paginate "repos/${{ github.repository }}/pulls/$PR_NUMBER/files" \
-            --jq '.[] | "\(.filename) (+\(.additions)/-\(.deletions))"')
-
-          echo "base_sha=$BASE_SHA" >> $GITHUB_OUTPUT
-          echo "head_sha=$HEAD_SHA" >> $GITHUB_OUTPUT
-
-          echo "title<<EOF" >> $GITHUB_OUTPUT
-          echo "$TITLE" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "$BODY" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-          echo "changed_files<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
 
       # Extract custom instructions from /review command
       - name: Parse review command
@@ -250,198 +197,15 @@ jobs:
           echo "$CUSTOM_INSTRUCTIONS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      # Checkout actions repo to access the template
-      - name: Checkout actions repo for template
+      # Run the composite action for the actual review
+      - name: Run AI review
         if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
-        uses: actions/checkout@v6
-        with:
-          repository: oxidian/actions
-          path: .github/actions-templates
-          sparse-checkout: |
-            templates
-          sparse-checkout-cone-mode: false
-
-      # Render review prompt from template
-      - name: Render review prompt
-        if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
-        id: render_prompt
-        env:
-          PR_TITLE: ${{ steps.pr_meta.outputs.title }}
-          PR_BODY: ${{ steps.pr_meta.outputs.body }}
-          CHANGED_FILES: ${{ steps.pr_meta.outputs.changed_files }}
-          BASE_SHA: ${{ steps.pr_meta.outputs.base_sha }}
-          HEAD_SHA: ${{ steps.pr_meta.outputs.head_sha }}
-          CUSTOM_INSTRUCTIONS: ${{ steps.parse.outputs.custom_instructions }}
-        run: |
-          # Read template and substitute variables using bash
-          # Note: We use eval with a here-doc to enable bash parameter expansion (${VAR:+...})
-          TEMPLATE=$(cat .github/actions-templates/templates/review-prompt.md)
-          RENDERED_PROMPT=$(eval "cat <<TEMPLATE_EOF
-          $TEMPLATE
-          TEMPLATE_EOF
-          ")
-
-          # Output to GITHUB_OUTPUT for next step
-          echo "prompt<<EOF" >> $GITHUB_OUTPUT
-          echo "$RENDERED_PROMPT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Run Codex Review
-        if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
-        id: codex
-        uses: openai/codex-action@v1
+        uses: oxidian/actions/ai-review@main
         with:
           openai-api-key: ${{ secrets.openai-api-key }}
           responses-api-endpoint: ${{ inputs.responses-api-endpoint }}
           model: ${{ inputs.model }}
           effort: ${{ inputs.effort }}
-          prompt: ${{ steps.render_prompt.outputs.prompt }}
-
-      - name: Parse review output
-        if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
-        id: parse_review
-        env:
-          CODEX_OUTPUT: ${{ steps.codex.outputs.final-message }}
-        run: |
-          OUTPUT="$CODEX_OUTPUT"
-
-          # Try to extract JSON from output
-          if echo "$OUTPUT" | jq -e . >/dev/null 2>&1; then
-            FINDINGS=$(echo "$OUTPUT" | jq -r '.findings // []')
-            CORRECTNESS=$(echo "$OUTPUT" | jq -r '.overall_correctness // "unknown"')
-            EXPLANATION=$(echo "$OUTPUT" | jq -r '.overall_explanation // ""')
-            CONFIDENCE=$(echo "$OUTPUT" | jq -r '.overall_confidence_score // 0')
-            echo "json_valid=true" >> $GITHUB_OUTPUT
-          else
-            echo "json_valid=false" >> $GITHUB_OUTPUT
-            FINDINGS="[]"
-            CORRECTNESS="unknown"
-            EXPLANATION=""
-            CONFIDENCE="0"
-          fi
-
-          # Use heredocs for multiline outputs
-          echo "findings<<EOF" >> $GITHUB_OUTPUT
-          echo "$FINDINGS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-          echo "correctness=$CORRECTNESS" >> $GITHUB_OUTPUT
-          echo "explanation<<EOF" >> $GITHUB_OUTPUT
-          echo "$EXPLANATION" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          echo "confidence=$CONFIDENCE" >> $GITHUB_OUTPUT
-
-      - name: Format review comment
-        if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
-        id: format_comment
-        env:
-          JSON_VALID: ${{ steps.parse_review.outputs.json_valid }}
-          CORRECTNESS: ${{ steps.parse_review.outputs.correctness }}
-          EXPLANATION: ${{ steps.parse_review.outputs.explanation }}
-          CONFIDENCE: ${{ steps.parse_review.outputs.confidence }}
-          FINDINGS: ${{ steps.parse_review.outputs.findings }}
-          CODEX_OUTPUT: ${{ steps.codex.outputs.final-message }}
-          BRANCH_REF: ${{ github.head_ref || github.ref_name }}
-        run: |
-          if [[ "$JSON_VALID" != "true" ]]; then
-            # Fallback to raw output if JSON parsing failed
-            COMMENT="⚠️ **Could not parse structured review output**
-
-          Raw review output:
-
-          $CODEX_OUTPUT"
-          else
-            # Build verdict header
-            if [[ "$CORRECTNESS" == "patch is correct" ]]; then
-              VERDICT="✅ **Patch is correct**"
-            elif [[ "$CORRECTNESS" == "patch is incorrect" ]]; then
-              VERDICT="❌ **Patch is incorrect**"
-            else
-              VERDICT="❓ **Verdict unknown**"
-            fi
-
-            # Start building comment
-            COMMENT="$VERDICT (confidence: ${CONFIDENCE})
-
-          $EXPLANATION"
-
-            # Add findings if any
-            FINDING_COUNT=$(echo "$FINDINGS" | jq 'length')
-            if [[ "$FINDING_COUNT" -gt 0 ]]; then
-              COMMENT="$COMMENT
-
-          ### Findings ($FINDING_COUNT)
-
-          "
-              # Sort findings by priority and format each one
-              SORTED_FINDINGS=$(echo "$FINDINGS" | jq -c 'sort_by(.priority)[]')
-              while IFS= read -r finding; do
-                TITLE=$(echo "$finding" | jq -r '.title')
-                BODY=$(echo "$finding" | jq -r '.body')
-                FILE=$(echo "$finding" | jq -r '.code_location.file_path')
-                START_LINE=$(echo "$finding" | jq -r '.code_location.line_range.start')
-                END_LINE=$(echo "$finding" | jq -r '.code_location.line_range.end')
-                CONF=$(echo "$finding" | jq -r '.confidence_score')
-
-                # Strip workspace prefix if LLM returned absolute path (fallback)
-                FILE="${FILE#$GITHUB_WORKSPACE/}"
-
-                # Create file link (GitHub format)
-                FILE_LINK="[\`$FILE:$START_LINE-$END_LINE\`](../blob/$BRANCH_REF/$FILE#L$START_LINE-L$END_LINE)"
-
-                COMMENT="$COMMENT
-          #### $TITLE
-
-          📍 $FILE_LINK | Confidence: $CONF
-
-          $BODY
-
-          "
-              done <<< "$SORTED_FINDINGS"
-            else
-              COMMENT="$COMMENT
-
-          ### No issues found
-
-          The review did not identify any bugs or concerns with this change."
-            fi
-          fi
-
-          # Output using heredoc
-          echo "comment<<EOF" >> $GITHUB_OUTPUT
-          echo "$COMMENT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      # Post success comment (only runs if all previous steps succeeded)
-      - name: Post success comment
-        if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: AI Review
-          number: ${{ github.event.pull_request.number || github.event.issue.number }}
-          message: |
-            ## AI Code Review
-
-            ${{ steps.format_comment.outputs.comment }}
-
-            ---
-            *Triggered by: ${{ github.event_name == 'issue_comment' && 'manual /review command' || 'PR opened/ready' }}*
-            <!-- AI_REVIEW_STATE: completed -->
-
-      # Post failure comment (only runs if any previous step failed)
-      - name: Post failure comment
-        if: failure() && (github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true')
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: AI Review
-          number: ${{ github.event.pull_request.number || github.event.issue.number }}
-          message: |
-            ## AI Code Review
-
-            :x: **Review failed**
-
-            The AI review encountered an error. Check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
-
-            ---
-            *Triggered by: ${{ github.event_name == 'issue_comment' && 'manual /review command' || 'PR opened/ready' }}*
-            <!-- AI_REVIEW_STATE: error -->
+          pr-number: ${{ github.event.pull_request.number || github.event.issue.number }}
+          custom-instructions: ${{ steps.parse.outputs.custom_instructions }}
+          trigger-description: ${{ github.event_name == 'issue_comment' && 'manual /review command' || 'PR opened/ready' }}
