@@ -1,0 +1,8 @@
+{
+  "checks": [
+    {
+      "fast": "make check",
+      "slow": "make check"
+    }
+  ]
+}
