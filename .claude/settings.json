@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh api:*)",
+      "Bash(gh repo view:*)",
+      "WebFetch(domain:github.com)"
+    ]
+  },
+  "extraKnownMarketplaces": {
+    "oxidian": {
+      "source": {
+        "source": "git",
+        "url": "git@github.com:oxidian/cc-plugins.git"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "ox@oxidian": true,
+    "oxgh@oxidian": true
+  }
+}
