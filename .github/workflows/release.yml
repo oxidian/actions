@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Semver tag (e.g., v1.2.3)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate version format
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version must match format v<major>.<minor>.<patch> (e.g., v1.2.3)"
+            exit 1
+          fi
+
+      - name: Parse version components
+        id: version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          MAJOR="${VERSION%%.*}"
+          MINOR="${VERSION%.*}"
+          {
+            echo "full=$VERSION"
+            echo "major=$MAJOR"
+            echo "minor=$MINOR"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Force push tags
+        env:
+          VERSION_FULL: ${{ steps.version.outputs.full }}
+          VERSION_MINOR: ${{ steps.version.outputs.minor }}
+          VERSION_MAJOR: ${{ steps.version.outputs.major }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -fa "$VERSION_FULL" -m "Release $VERSION_FULL"
+          git tag -fa "$VERSION_MINOR" -m "Release $VERSION_MINOR"
+          git tag -fa "$VERSION_MAJOR" -m "Release $VERSION_MAJOR"
+          git push origin --force "$VERSION_FULL" "$VERSION_MINOR" "$VERSION_MAJOR"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_FULL: ${{ steps.version.outputs.full }}
+        run: |-
+          gh release create "$VERSION_FULL" \
+            --title "$VERSION_FULL" \
+            --generate-notes
