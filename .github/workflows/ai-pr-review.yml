@@ -99,6 +99,9 @@ jobs:
           elif [[ "$COMMENT" == *"<!-- AI_REVIEW_STATE: ci_failed -->"* ]]; then
             echo "should_run=true" >> "$GITHUB_OUTPUT"
             echo "CI previously failed, will retry now that new commits are pushed"
+          elif [[ "$COMMENT" == *"<!-- AI_REVIEW_STATE: error -->"* ]]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "Review previously errored, will retry"
           elif [[ -z "$COMMENT" ]]; then
             echo "should_run=true" >> "$GITHUB_OUTPUT"
             echo "No previous review comment found, will start review"
