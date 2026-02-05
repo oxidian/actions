@@ -22,7 +22,7 @@ jobs:
   # ── Option A: Reusable workflow (recommended) ──────────
   # Includes CI waiting, should-review gate, /review command
   review:
-    uses: oxidian/actions/.github/workflows/ai-pr-review.yml@main
+    uses: oxidian/actions/.github/workflows/ai-review.yml@main
     with:
       # Required: Your OpenAI API endpoint
       responses-api-endpoint: https://your-azure-openai.openai.azure.com/openai/v1/responses

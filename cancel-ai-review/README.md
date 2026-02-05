@@ -31,7 +31,7 @@ jobs:
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
 | `pr-number` | Yes | - | PR number to cancel reviews for |
-| `workflow-name` | No | `ai-pr-review.yml` | Name of the AI review workflow file |
+| `workflow-name` | No | `ai-review.yml` | Name of the AI review workflow file |
 
 ## Outputs
 

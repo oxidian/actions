@@ -45,7 +45,7 @@ Add your OpenAI API key to your repository secrets:
 
 #### Step 2: Create Workflow File
 
-Create `.github/workflows/ai-pr-review.yml` in your repository:
+Create `.github/workflows/ai-review.yml` in your repository:
 
 ```yaml
 name: AI PR Review
@@ -62,7 +62,7 @@ concurrency:
 
 jobs:
   review:
-    uses: oxidian/actions/.github/workflows/ai-pr-review.yml@main
+    uses: oxidian/actions/.github/workflows/ai-review.yml@main
     with:
       responses-api-endpoint: "https://your-azure-openai.openai.azure.com/openai/v1/responses"
       model: "gpt-5.2-codex"
