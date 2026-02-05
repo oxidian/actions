@@ -31,9 +31,9 @@ runs:
         PR_NUMBER=$(gh api "repos/${{ github.repository }}/commits/$HEAD_SHA/pulls" --jq '.[0].number')
         echo "Looking for AI review workflow runs for PR #$PR_NUMBER..."
 
-        # Get workflow runs by head SHA (works for both pull_request and issue_comment triggers)
+        # Get workflow runs by head SHA or PR number (catches both /review triggered runs and earlier commits)
         RUNS=$(gh api "repos/${{ github.repository }}/actions/workflows/$WORKFLOW_NAME/runs" \
-          --jq "[.workflow_runs[] | select(.head_sha == \"$HEAD_SHA\")]")
+          --jq "[.workflow_runs[] | select(.head_sha == \"$HEAD_SHA\" or (.pull_requests[]?.number == $PR_NUMBER))]")
 
         RUN_COUNT=$(echo "$RUNS" | jq 'length')
         echo "Found $RUN_COUNT workflow run(s)"
