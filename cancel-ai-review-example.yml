@@ -11,6 +11,7 @@ on:
 
 permissions:
   actions: write
+  pull-requests: read
 
 jobs:
   cancel:
@@ -19,7 +20,7 @@ jobs:
       - name: Cancel AI review runs
         uses: oxidian/actions/cancel-ai-review@main
         with:
-          pr-number: ${{ github.event.pull_request.number }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
           # Optional: specify a different workflow name if your AI review workflow
           # is not named 'ai-review.yml'
           # workflow-name: my-ai-review.yml
