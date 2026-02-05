@@ -49,7 +49,7 @@ jobs:
           VERSION_MAJOR: ${{ steps.version.outputs.major }}
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -fa "$VERSION_FULL" -m "Release $VERSION_FULL"
           git tag -fa "$VERSION_MINOR" -m "Release $VERSION_MINOR"
           git tag -fa "$VERSION_MAJOR" -m "Release $VERSION_MAJOR"
