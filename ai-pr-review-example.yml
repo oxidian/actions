@@ -25,13 +25,13 @@ jobs:
     uses: oxidian/actions/.github/workflows/ai-pr-review.yml@main
     with:
       # Required: Your OpenAI API endpoint
-      responses-api-endpoint: "https://your-azure-openai.openai.azure.com/openai/v1/responses"
+      responses-api-endpoint: https://your-azure-openai.openai.azure.com/openai/v1/responses
 
       # Required: The model to use for reviews
-      model: "gpt-5.2-codex"
+      model: gpt-5.2-codex
 
       # Optional: Effort level (low, medium, high, xhigh)
-      effort: "xhigh"
+      effort: xhigh
 
       # Optional: Maximum minutes to wait for CI checks (default: 30)
       ci-timeout-minutes: 30

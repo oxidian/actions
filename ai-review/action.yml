@@ -6,41 +6,41 @@ description: >
 
 inputs:
   openai-api-key:
-    description: 'OpenAI API key'
+    description: OpenAI API key
     required: true
   responses-api-endpoint:
-    description: 'OpenAI API endpoint URL'
+    description: OpenAI API endpoint URL
     required: true
   model:
-    description: 'OpenAI model to use (e.g., gpt-5.2-codex)'
+    description: OpenAI model to use (e.g., gpt-5.2-codex)
     required: true
   effort:
-    description: 'Effort level for the review (low, medium, high, xhigh)'
+    description: Effort level for the review (low, medium, high, xhigh)
     required: false
-    default: 'xhigh'
+    default: xhigh
   pr-number:
-    description: 'PR number to review'
+    description: PR number to review
     required: true
   custom-instructions:
-    description: 'Additional reviewer instructions appended to the prompt'
+    description: Additional reviewer instructions appended to the prompt
     required: false
     default: ''
 
 outputs:
   review-json:
-    description: 'Raw JSON output from Codex'
+    description: Raw JSON output from Codex
     value: ${{ steps.codex.outputs.final-message }}
   review:
-    description: 'Formatted review comment body (markdown)'
+    description: Formatted review comment body (markdown)
     value: ${{ steps.format_comment.outputs.comment }}
   correctness:
-    description: 'Verdict string (e.g. "patch is correct")'
+    description: Verdict string (e.g. "patch is correct")
     value: ${{ steps.parse_review.outputs.correctness }}
   confidence:
-    description: 'Confidence score'
+    description: Confidence score
     value: ${{ steps.parse_review.outputs.confidence }}
   findings-count:
-    description: 'Number of findings'
+    description: Number of findings
     value: ${{ steps.parse_review.outputs.findings_count }}
 
 runs:
@@ -167,7 +167,7 @@ runs:
         FINDINGS: ${{ steps.parse_review.outputs.findings }}
         CODEX_OUTPUT: ${{ steps.codex.outputs.final-message }}
         BRANCH_REF: ${{ github.head_ref || github.ref_name }}
-      run: |
+      run: |-
         if [[ "$JSON_VALID" != "true" ]]; then
           # Fallback to raw output if JSON parsing failed
           COMMENT="⚠️ **Could not parse structured review output**
@@ -236,4 +236,3 @@ runs:
         echo "comment<<EOF" >> $GITHUB_OUTPUT
         echo "$COMMENT" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
-

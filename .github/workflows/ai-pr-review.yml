@@ -4,26 +4,27 @@ on:
   workflow_call:
     inputs:
       responses-api-endpoint:
-        description: 'OpenAI API endpoint URL'
+        description: OpenAI API endpoint URL
         required: true
         type: string
       model:
-        description: 'OpenAI model to use (e.g., gpt-5.2-codex)'
-        required: true
-        type: string
-      effort:
-        description: 'Effort level for the review (low, medium, high, xhigh)'
+        description: OpenAI model to use
         required: false
         type: string
-        default: 'xhigh'
+        default: gpt-5.2-codex
+      effort:
+        description: Effort level for the review (low, medium, high, xhigh)
+        required: false
+        type: string
+        default: xhigh
       ci-timeout-minutes:
-        description: 'Maximum minutes to wait for CI checks to pass'
+        description: Maximum minutes to wait for CI checks to pass
         required: false
         type: number
         default: 30
     secrets:
       openai-api-key:
-        description: 'OpenAI API key'
+        description: OpenAI API key
         required: true
 
 # Trigger on PR events from the caller workflow
@@ -51,16 +52,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACTOR: ${{ github.actor }}
         run: |
-          PERMISSION=$(gh api repos/${{ github.repository }}/collaborators/$ACTOR/permission \
+          PERMISSION=$(gh api "repos/${{ github.repository }}/collaborators/$ACTOR/permission" \
             --jq '.permission')
 
           echo "User $ACTOR has permission: $PERMISSION"
 
           if [[ "$PERMISSION" == "admin" || "$PERMISSION" == "write" ]]; then
-            echo "has_access=true" >> $GITHUB_OUTPUT
+            echo "has_access=true" >> "$GITHUB_OUTPUT"
           else
             echo "::error::User $ACTOR does not have write access (permission: $PERMISSION)."
-            echo "has_access=false" >> $GITHUB_OUTPUT
+            echo "has_access=false" >> "$GITHUB_OUTPUT"
             exit 1
           fi
 
@@ -75,13 +76,13 @@ jobs:
           AUTO_MERGE=$(gh pr view "$PR_NUMBER" --repo "${{ github.repository }}" --json autoMergeRequest -q '.autoMergeRequest != null')
           if [[ "$AUTO_MERGE" == "true" ]]; then
             echo "Auto-merge is enabled, skipping AI review"
-            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           # For non-synchronize events, always run
           if [[ "$EVENT_ACTION" != "synchronize" ]]; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
             echo "Non-synchronize event, will run review"
             exit 0
           fi
@@ -93,16 +94,19 @@ jobs:
             -q '([.comments[] | select(.body | contains("AI Code Review"))] | last | .body) // ""')
 
           if [[ "$COMMENT" == *"<!-- AI_REVIEW_STATE: in_progress -->"* ]]; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
             echo "Review was in progress, will restart"
           elif [[ "$COMMENT" == *"<!-- AI_REVIEW_STATE: ci_failed -->"* ]]; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
             echo "CI previously failed, will retry now that new commits are pushed"
+          elif [[ "$COMMENT" == *"<!-- AI_REVIEW_STATE: error -->"* ]]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "Review previously errored, will retry"
           elif [[ -z "$COMMENT" ]]; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
             echo "No previous review comment found, will start review"
           else
-            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
             echo "Previous review completed, skipping"
           fi
 
@@ -114,6 +118,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # React to /review comment so the user knows we saw it
       - name: Acknowledge /review command
@@ -141,7 +146,7 @@ jobs:
           while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
             # Get all check runs for this commit, excluding our own workflow
             # Filter out any check from the AI PR Review workflow
-            CHECKS=$(gh api repos/${{ github.repository }}/commits/$SHA/check-runs \
+            CHECKS=$(gh api "repos/${{ github.repository }}/commits/$SHA/check-runs" \
               --jq '[.check_runs[] | select((.name | contains("AI PR Review") | not) and (.name | contains("review / review") | not) and .name != "review" and .name != "should-review")]')
 
             TOTAL=$(echo "$CHECKS" | jq 'length')
@@ -153,19 +158,21 @@ jobs:
             if [ "$FAILED" -gt 0 ]; then
               echo "CI checks failed. Skipping AI review."
               echo "$CHECKS" | jq -r '.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "  - \(.name): \(.conclusion)"'
-              echo "ci_passed=false" >> $GITHUB_OUTPUT
+              echo "ci_passed=false" >> "$GITHUB_OUTPUT"
 
               # Capture failed checks for the comment
               FAILED_CHECKS=$(echo "$CHECKS" | jq -r '[.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "- **\(.name)**: \(.conclusion)"] | join("\n")')
-              echo "failed_checks<<EOF" >> $GITHUB_OUTPUT
-              echo "$FAILED_CHECKS" >> $GITHUB_OUTPUT
-              echo "EOF" >> $GITHUB_OUTPUT
+              {
+                echo "failed_checks<<EOF"
+                echo "$FAILED_CHECKS"
+                echo "EOF"
+              } >> "$GITHUB_OUTPUT"
               exit 0
             fi
 
             if [ "$COMPLETED" -eq "$TOTAL" ] && [ "$TOTAL" -gt 0 ]; then
               echo "All CI checks passed!"
-              echo "ci_passed=true" >> $GITHUB_OUTPUT
+              echo "ci_passed=true" >> "$GITHUB_OUTPUT"
               exit 0
             fi
 
@@ -174,8 +181,8 @@ jobs:
           done
 
           echo "Timeout waiting for CI checks"
-          echo "ci_passed=false" >> $GITHUB_OUTPUT
-          echo "failed_checks=CI check timeout" >> $GITHUB_OUTPUT
+          echo "ci_passed=false" >> "$GITHUB_OUTPUT"
+          echo "failed_checks=CI check timeout" >> "$GITHUB_OUTPUT"
           exit 0
 
       - name: Post CI failure comment
@@ -221,9 +228,11 @@ jobs:
           else
             CUSTOM_INSTRUCTIONS=""
           fi
-          echo "custom_instructions<<EOF" >> $GITHUB_OUTPUT
-          echo "$CUSTOM_INSTRUCTIONS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "custom_instructions<<EOF"
+            echo "$CUSTOM_INSTRUCTIONS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       # Post "in progress" comment before starting the review
       - name: Post started comment
@@ -277,7 +286,7 @@ jobs:
         with:
           header: AI Review
           number: ${{ github.event.pull_request.number || github.event.issue.number }}
-          message: |
+          message: |-
             ## AI Code Review
 
             :x: **Review failed**

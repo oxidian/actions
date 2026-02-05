@@ -1,0 +1,18 @@
+name: Cancel AI Review on Auto-Merge
+
+on:
+  pull_request:
+    types: [auto_merge_enabled]
+
+permissions:
+  actions: write
+
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel AI review runs
+        uses: oxidian/actions/cancel-ai-review@main
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          workflow-name: self-review.yml

@@ -1,0 +1,25 @@
+# Example: Cancel AI Review on Auto-Merge
+#
+# Copy this file to .github/workflows/cancel-ai-review-on-auto-merge.yml
+# in your repository to automatically cancel AI reviews when auto-merge is enabled.
+
+name: Cancel AI Review on Auto-Merge
+
+on:
+  pull_request:
+    types: [auto_merge_enabled]
+
+permissions:
+  actions: write
+
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel AI review runs
+        uses: oxidian/actions/cancel-ai-review@main
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          # Optional: specify a different workflow name if your AI review workflow
+          # is not named 'ai-pr-review.yml'
+          # workflow-name: my-ai-review.yml

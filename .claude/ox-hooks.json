@@ -1,0 +1,8 @@
+{
+  "checks": [
+    {
+      "fast": "make format",
+      "slow": "make check"
+    }
+  ]
+}

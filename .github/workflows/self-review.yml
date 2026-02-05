@@ -1,0 +1,21 @@
+name: Self AI PR Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+  issue_comment:
+    types: [created]
+
+permissions:
+  checks: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    uses: ./.github/workflows/ai-pr-review.yml
+    with:
+      responses-api-endpoint: ${{ vars.OPENAI_API_ENDPOINT }}
+      ci-timeout-minutes: 3
+    secrets:
+      openai-api-key: ${{ secrets.AZURE_OPENAI_API_KEY }}
