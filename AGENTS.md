@@ -8,7 +8,7 @@ This repository contains reusable GitHub Actions for automated AI-powered code r
 
 - **ai-review/**: Composite action that performs AI code analysis on pull requests using OpenAI Codex
 - **cancel-ai-review/**: Composite action that cancels AI review workflows when auto-merge is enabled
-- **.github/workflows/ai-pr-review.yml**: Reusable workflow wrapping the composite action with CI waiting, `/review` command support, and smart gating logic
+- **.github/workflows/ai-review.yml**: Reusable workflow wrapping the composite action with CI waiting, `/review` command support, and smart gating logic
 
 The repo applies its own actions to itself via `self-review.yml` and `cancel-self-review.yml`.
 
@@ -39,7 +39,7 @@ Review state is tracked via HTML comments in PR comments: `in_progress`, `ci_fai
 
 - `ai-review/action.yml` - Composite action definition (inputs, outputs, shell steps)
 - `ai-review/templates/review-prompt.md` - AI review prompt with guidelines and JSON schema
-- `.github/workflows/ai-pr-review.yml` - Reusable workflow with full automation logic
+- `.github/workflows/ai-review.yml` - Reusable workflow with full automation logic
 
 ## Testing Changes
 

@@ -10,7 +10,7 @@ inputs:
   workflow-name:
     description: Name of the AI review workflow file
     required: false
-    default: ai-pr-review.yml
+    default: ai-review.yml
 
 outputs:
   cancelled-count:
