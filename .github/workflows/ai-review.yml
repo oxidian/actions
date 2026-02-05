@@ -27,6 +27,10 @@ on:
         description: OpenAI API key
         required: true
 
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number || github.event.issue.number }}${{ github.event_name == 'issue_comment' && !startsWith(github.event.comment.body, '/review') && '-noop' || '' }}
+  cancel-in-progress: true
+
 # Trigger on PR events from the caller workflow
 permissions:
   checks: read
