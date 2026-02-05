@@ -15,6 +15,7 @@ on:
 
 permissions:
   actions: write
+  pull-requests: read
 
 jobs:
   cancel:
@@ -41,10 +42,11 @@ jobs:
 
 ## How It Works
 
-1. Queries the GitHub API for workflow runs matching the head SHA
-2. Cancels any in-progress runs
-3. Waits 30 seconds for cancellations to complete
-4. Deletes the cancelled runs
+1. Looks up the PR number from the head commit SHA
+2. Queries workflow runs matching the head SHA or PR number
+3. Cancels any in-progress runs
+4. Waits 30 seconds for cancellations to complete
+5. Deletes the cancelled runs
 
 ## Why Use This?
 
