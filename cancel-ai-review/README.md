@@ -23,14 +23,14 @@ jobs:
       - name: Cancel AI review runs
         uses: oxidian/actions/cancel-ai-review@main
         with:
-          pr-number: ${{ github.event.pull_request.number }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
 ```
 
 ## Inputs
 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `pr-number` | Yes | - | PR number to cancel reviews for |
+| `head-sha` | Yes | - | PR head SHA to cancel reviews for |
 | `workflow-name` | No | `ai-review.yml` | Name of the AI review workflow file |
 
 ## Outputs
@@ -41,7 +41,7 @@ jobs:
 
 ## How It Works
 
-1. Queries the GitHub API for workflow runs matching the PR number
+1. Queries the GitHub API for workflow runs matching the head SHA
 2. Cancels any in-progress runs
 3. Waits 30 seconds for cancellations to complete
 4. Deletes the cancelled runs

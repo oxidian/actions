@@ -14,5 +14,5 @@ jobs:
       - name: Cancel AI review runs
         uses: oxidian/actions/cancel-ai-review@main
         with:
-          pr-number: ${{ github.event.pull_request.number }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
           workflow-name: self-review.yml

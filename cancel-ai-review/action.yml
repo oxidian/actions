@@ -4,8 +4,8 @@ description: >
   PR. Use this when auto-merge is enabled and you want to stop pending reviews.
 
 inputs:
-  pr-number:
-    description: PR number to cancel reviews for
+  head-sha:
+    description: PR head SHA to cancel reviews for
     required: true
   workflow-name:
     description: Name of the AI review workflow file
@@ -25,20 +25,21 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
-        PR_NUMBER: ${{ inputs.pr-number }}
+        HEAD_SHA: ${{ inputs.head-sha }}
         WORKFLOW_NAME: ${{ inputs.workflow-name }}
       run: |-
+        PR_NUMBER=$(gh api "repos/${{ github.repository }}/commits/$HEAD_SHA/pulls" --jq '.[0].number')
         echo "Looking for AI review workflow runs for PR #$PR_NUMBER..."
 
-        # Get workflow runs for this PR
+        # Get workflow runs by head SHA (works for both pull_request and issue_comment triggers)
         RUNS=$(gh api "repos/${{ github.repository }}/actions/workflows/$WORKFLOW_NAME/runs" \
-          --jq "[.workflow_runs[] | select(.pull_requests[].number == $PR_NUMBER)]")
+          --jq "[.workflow_runs[] | select(.head_sha == \"$HEAD_SHA\")]")
 
         RUN_COUNT=$(echo "$RUNS" | jq 'length')
-        echo "Found $RUN_COUNT workflow run(s) for PR #$PR_NUMBER"
+        echo "Found $RUN_COUNT workflow run(s)"
 
         if [ "$RUN_COUNT" -eq 0 ]; then
-          echo "cancelled_count=0" >> $GITHUB_OUTPUT
+          echo "cancelled_count=0" >> "$GITHUB_OUTPUT"
           exit 0
         fi
 
@@ -60,7 +61,7 @@ runs:
           sleep 30
         fi
 
-        # Delete all runs for this PR
+        # Delete all runs
         DELETED=0
         for RUN_ID in $(echo "$RUNS" | jq -r '.[].id'); do
           echo "Deleting run $RUN_ID..."
@@ -69,4 +70,4 @@ runs:
         done
 
         echo "Deleted $DELETED run(s)"
-        echo "cancelled_count=$CANCELLED" >> $GITHUB_OUTPUT
+        echo "cancelled_count=$CANCELLED" >> "$GITHUB_OUTPUT"
