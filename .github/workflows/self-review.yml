@@ -18,4 +18,4 @@ jobs:
       responses-api-endpoint: ${{ vars.OPENAI_API_ENDPOINT }}
       ci-timeout-minutes: 3
     secrets:
-      openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+      openai-api-key: ${{ secrets.AZURE_OPENAI_API_KEY }}
