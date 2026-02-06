@@ -1,0 +1,35 @@
+# Example: Reusable workflow (recommended)
+#
+# Includes CI waiting, should-review gate, /review command, and concurrency.
+# Do NOT add a concurrency group here — the reusable workflow handles it.
+#
+# 1. Copy this file to .github/workflows/ai-review.yml
+# 2. Configure the inputs and secrets for your OpenAI setup
+# 3. Add the OPENAI_API_KEY secret to your repository settings
+
+name: AI PR Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+  issue_comment:
+    types: [created]
+
+jobs:
+  review:
+    uses: oxidian/actions/.github/workflows/ai-review.yml@main
+    with:
+      # Required: Your OpenAI API endpoint
+      responses-api-endpoint: https://your-azure-openai.openai.azure.com/openai/v1/responses
+
+      # Optional: The model to use for reviews
+      model: gpt-5.2-codex
+
+      # Optional: Effort level (low, medium, high, xhigh)
+      effort: xhigh
+
+      # Optional: Maximum minutes to wait for CI checks (default: 30)
+      ci-timeout-minutes: 30
+    secrets:
+      # Required: Your OpenAI API key (add this to your repository secrets)
+      openai-api-key: ${{ secrets.OPENAI_API_KEY }}

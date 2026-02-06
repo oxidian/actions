@@ -45,12 +45,14 @@ runs:
 
         # Cancel any in-progress runs
         CANCELLED=0
+        CANCELLED_IDS=()
         for RUN_ID in $(echo "$RUNS" | jq -r '.[].id'); do
           STATUS=$(echo "$RUNS" | jq -r ".[] | select(.id == $RUN_ID) | .status")
           if [ "$STATUS" != "completed" ]; then
             echo "Cancelling run $RUN_ID (status: $STATUS)..."
             gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID/cancel" -X POST --silent || true
             CANCELLED=$((CANCELLED + 1))
+            CANCELLED_IDS+=("$RUN_ID")
           fi
         done
 
@@ -61,9 +63,9 @@ runs:
           sleep 30
         fi
 
-        # Delete all runs
+        # Delete cancelled runs
         DELETED=0
-        for RUN_ID in $(echo "$RUNS" | jq -r '.[].id'); do
+        for RUN_ID in "${CANCELLED_IDS[@]}"; do
           echo "Deleting run $RUN_ID..."
           gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID" -X DELETE --silent || true
           DELETED=$((DELETED + 1))

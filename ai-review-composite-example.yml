@@ -1,0 +1,38 @@
+# Example: Composite action (for external / custom usage)
+#
+# Gives full control — you handle checkout, CI gating, trigger logic, and
+# concurrency yourself.
+#
+# 1. Copy this file to .github/workflows/ai-review.yml
+# 2. Configure the inputs and secrets for your OpenAI setup
+# 3. Add the OPENAI_API_KEY secret to your repository settings
+
+name: AI PR Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Run AI review
+        uses: oxidian/actions/ai-review@main
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          responses-api-endpoint: https://your-azure-openai.openai.azure.com/openai/v1/responses
+          model: gpt-5.2-codex
+          pr-number: ${{ github.event.pull_request.number }}

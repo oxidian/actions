@@ -34,50 +34,18 @@ There are two ways to use this action:
 
 ### Option A: Reusable Workflow
 
-#### Step 1: Set Up Secrets
+1. Add your OpenAI API key to your repository secrets (`OPENAI_API_KEY`)
+2. Copy [`ai-review-reusable-example.yml`](../ai-review-reusable-example.yml) to `.github/workflows/ai-review.yml`
+3. Update the inputs and secrets for your OpenAI setup
 
-Add your OpenAI API key to your repository secrets:
-
-1. Go to your repository → Settings → Secrets and variables → Actions
-2. Click "New repository secret"
-3. Name: `OPENAI_API_KEY`
-4. Value: Your OpenAI API key
-
-#### Step 2: Create Workflow File
-
-Create `.github/workflows/ai-review.yml` in your repository:
-
-```yaml
-name: AI PR Review
-
-on:
-  pull_request:
-    types: [opened, ready_for_review, synchronize]
-  issue_comment:
-    types: [created]
-
-concurrency:
-  group: ai-review-${{ github.event.pull_request.number || github.event.issue.number }}${{ github.event_name == 'issue_comment' && !startsWith(github.event.comment.body, '/review') && '-noop' || '' }}
-  cancel-in-progress: true
-
-jobs:
-  review:
-    uses: oxidian/actions/.github/workflows/ai-review.yml@main
-    with:
-      responses-api-endpoint: "https://your-azure-openai.openai.azure.com/openai/v1/responses"
-      model: "gpt-5.2-codex"
-      effort: "xhigh"
-      ci-timeout-minutes: 30
-    secrets:
-      openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-```
+> **Do not** add a `concurrency` group in your caller workflow — the reusable workflow already manages concurrency. Adding one causes deadlocks.
 
 #### Workflow Inputs
 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
 | `responses-api-endpoint` | Yes | - | OpenAI API endpoint URL |
-| `model` | Yes | - | OpenAI model to use (e.g., `gpt-5.2-codex`) |
+| `model` | No | `gpt-5.2-codex` | OpenAI model to use |
 | `effort` | No | `xhigh` | Review effort level: `low`, `medium`, `high`, or `xhigh` |
 | `ci-timeout-minutes` | No | `30` | Max minutes to wait for CI checks to pass |
 
@@ -95,40 +63,13 @@ jobs:
 
 Use `oxidian/actions/ai-review@main` directly for full control over when and how the review runs.
 
-#### Prerequisites
+Copy [`ai-review-composite-example.yml`](../ai-review-composite-example.yml) to `.github/workflows/ai-review.yml` and update the inputs and secrets.
+
+Prerequisites:
 
 - Caller must run `actions/checkout@v6` with `fetch-depth: 0` before calling the action
 - Workflow needs `pull-requests: write` and `contents: read` permissions
-
-#### Example
-
-```yaml
-name: AI PR Review
-
-on:
-  pull_request:
-    types: [opened, ready_for_review, synchronize]
-
-permissions:
-  contents: read
-  pull-requests: write
-
-jobs:
-  review:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Run AI review
-        uses: oxidian/actions/ai-review@main
-        with:
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          responses-api-endpoint: "https://your-azure-openai.openai.azure.com/openai/v1/responses"
-          model: "gpt-5.2-codex"
-          pr-number: ${{ github.event.pull_request.number }}
-```
+- You must manage your own `concurrency` group (the example includes one)
 
 #### Action Inputs
 
@@ -158,7 +99,7 @@ jobs:
 ### Automatic Triggers
 
 1. **PR Opened/Ready**: Automatically reviews when a PR is opened or marked ready for review
-2. **New Commits**: Reviews new commits on PRs that had in-progress or failed CI reviews
+2. **New Commits**: Reviews new commits on PRs that had in-progress, failed CI, or errored reviews
 3. **Auto-merge Detection**: Skips review if auto-merge is enabled (assumes user doesn't want review)
 4. **Dependabot PRs**: Always skipped automatically (dependabot updates are usually auto-merged)
 
@@ -232,39 +173,3 @@ Findings are categorized by priority:
 - Verify your API key is correct and has proper permissions
 - Check that the endpoint URL matches your OpenAI setup
 - Ensure the model name is correct for your deployment
-
-## Example Output
-
-The workflow posts a comment like this:
-
-```markdown
-## AI Code Review
-
-✅ **Patch is correct** (confidence: 0.95)
-
-The changes properly implement user authentication with secure password hashing.
-
-### Findings (2)
-
-#### [P2] Missing error handling for database connection failure
-
-📍 `backend/auth.py:45-48` | Confidence: 0.85
-
-The `authenticate_user` function doesn't handle the case where the database
-connection fails. If `db.connect()` raises an exception, the user will see
-a 500 error instead of a proper authentication failure message.
-
-#### [P3] Consider adding test for invalid credentials
-
-📍 `backend/tests/test_auth.py:1-10` | Confidence: 0.70
-
-The test suite covers the happy path but doesn't test authentication with
-invalid credentials. Consider adding a test case for this scenario.
-
----
-*Triggered by: PR opened/ready*
-```
-
-## License
-
-This workflow is part of the Oxidian Claude Code Plugins repository.
