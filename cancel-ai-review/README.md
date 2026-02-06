@@ -4,28 +4,7 @@ A GitHub Action that cancels and deletes AI review workflow runs for a pull requ
 
 ## Usage
 
-Create `.github/workflows/cancel-ai-review-on-auto-merge.yml` in your repository:
-
-```yaml
-name: Cancel AI Review on Auto-Merge
-
-on:
-  pull_request:
-    types: [auto_merge_enabled]
-
-permissions:
-  actions: write
-  pull-requests: read
-
-jobs:
-  cancel:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Cancel AI review runs
-        uses: oxidian/actions/cancel-ai-review@main
-        with:
-          head-sha: ${{ github.event.pull_request.head.sha }}
-```
+See [cancel-ai-review-example.yml](../cancel-ai-review-example.yml) for a complete workflow example.
 
 ## Inputs
 
