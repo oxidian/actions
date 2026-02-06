@@ -99,7 +99,7 @@ Prerequisites:
 ### Automatic Triggers
 
 1. **PR Opened/Ready**: Automatically reviews when a PR is opened or marked ready for review
-2. **New Commits**: Reviews new commits on PRs that had in-progress or failed CI reviews
+2. **New Commits**: Reviews new commits on PRs that had in-progress, failed CI, or errored reviews
 3. **Auto-merge Detection**: Skips review if auto-merge is enabled (assumes user doesn't want review)
 4. **Dependabot PRs**: Always skipped automatically (dependabot updates are usually auto-merged)
 
@@ -173,39 +173,3 @@ Findings are categorized by priority:
 - Verify your API key is correct and has proper permissions
 - Check that the endpoint URL matches your OpenAI setup
 - Ensure the model name is correct for your deployment
-
-## Example Output
-
-The workflow posts a comment like this:
-
-```markdown
-## AI Code Review
-
-✅ **Patch is correct** (confidence: 0.95)
-
-The changes properly implement user authentication with secure password hashing.
-
-### Findings (2)
-
-#### [P2] Missing error handling for database connection failure
-
-📍 `backend/auth.py:45-48` | Confidence: 0.85
-
-The `authenticate_user` function doesn't handle the case where the database
-connection fails. If `db.connect()` raises an exception, the user will see
-a 500 error instead of a proper authentication failure message.
-
-#### [P3] Consider adding test for invalid credentials
-
-📍 `backend/tests/test_auth.py:1-10` | Confidence: 0.70
-
-The test suite covers the happy path but doesn't test authentication with
-invalid credentials. Consider adding a test case for this scenario.
-
----
-*Triggered by: PR opened/ready*
-```
-
-## License
-
-This workflow is part of the Oxidian Claude Code Plugins repository.
