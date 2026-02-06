@@ -2,6 +2,14 @@
 
 Reusable GitHub Actions from Oxidian.
 
+## Quickstart
+
+```
+cd your-project/
+claude
+> Install github.com/oxidian/actions in this project following instructions in the README
+```
+
 ## Available Actions
 
 | Action | Description | Example |
