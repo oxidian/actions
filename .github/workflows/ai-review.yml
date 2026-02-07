@@ -204,7 +204,7 @@ jobs:
 
             ${{ steps.ci_check.outputs.failed_checks }}
 
-            Pushing new commits will trigger the review automatically, once CI passes.
+            Pushing new commits will trigger the review automatically once CI passes.
 
             ---
             *Triggered by: PR opened/ready*
