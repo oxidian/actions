@@ -45,7 +45,7 @@ There are two ways to use this action:
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
 | `responses-api-endpoint` | Yes | - | OpenAI API endpoint URL |
-| `model` | No | `gpt-5.3-codex` | OpenAI model to use |
+| `model` | No | `gpt-5.2-codex` | OpenAI model to use |
 | `effort` | No | `xhigh` | Review effort level: `low`, `medium`, `high`, or `xhigh` |
 | `ci-timeout-minutes` | No | `30` | Max minutes to wait for CI checks to pass |
 
@@ -133,14 +133,14 @@ The workflow tracks review state using HTML comments in PR comments:
 
 ```yaml
 responses-api-endpoint: "https://your-resource-name.openai.azure.com/openai/v1/responses"
-model: "gpt-5.3-codex"  # or your deployed model name
+model: "gpt-5.2-codex"  # or your deployed model name
 ```
 
 ### For OpenAI API
 
 ```yaml
 responses-api-endpoint: "https://api.openai.com/v1/responses"
-model: "gpt-5.3-codex"  # or your preferred model
+model: "gpt-5.2-codex"  # or your preferred model
 ```
 
 ## Priority Levels
