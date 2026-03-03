@@ -12,7 +12,7 @@ inputs:
     description: OpenAI API endpoint URL
     required: true
   model:
-    description: OpenAI model to use (e.g., gpt-5.3-codex)
+    description: OpenAI model to use (e.g., gpt-5.2-codex)
     required: true
   effort:
     description: Effort level for the review (low, medium, high, xhigh)
