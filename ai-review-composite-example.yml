@@ -34,5 +34,5 @@ jobs:
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           responses-api-endpoint: https://your-azure-openai.openai.azure.com/openai/v1/responses
-          model: gpt-5.2-codex
+          model: gpt-5.3-codex
           pr-number: ${{ github.event.pull_request.number }}
