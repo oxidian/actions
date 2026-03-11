@@ -21,6 +21,10 @@ inputs:
   pr-number:
     description: PR number to review
     required: true
+  max-retries:
+    description: Max retries for Codex API requests and streaming connections
+    required: false
+    default: '30'
   custom-instructions:
     description: Additional reviewer instructions appended to the prompt
     required: false
@@ -118,6 +122,9 @@ runs:
         model: ${{ inputs.model }}
         effort: ${{ inputs.effort }}
         prompt: ${{ steps.render_prompt.outputs.prompt }}
+        codex-args: >-
+          --config model_providers.codex-action-responses-proxy.stream_max_retries=${{ inputs.max-retries }}
+          --config model_providers.codex-action-responses-proxy.request_max_retries=${{ inputs.max-retries }}
 
     - name: Parse review output
       id: parse_review
