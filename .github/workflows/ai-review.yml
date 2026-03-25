@@ -196,7 +196,7 @@ jobs:
 
       - name: Post CI failure comment
         if: github.event_name != 'issue_comment' && steps.ci_check.outputs.ci_passed == 'false'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: AI Review
           number: ${{ github.event.pull_request.number || github.event.issue.number }}
@@ -246,7 +246,7 @@ jobs:
       # Post "in progress" comment before starting the review
       - name: Post started comment
         if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: AI Review
           number: ${{ github.event.pull_request.number || github.event.issue.number }}
@@ -276,7 +276,7 @@ jobs:
       # Post success comment
       - name: Post review comment
         if: github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: AI Review
           number: ${{ github.event.pull_request.number || github.event.issue.number }}
@@ -292,7 +292,7 @@ jobs:
       # Post failure comment (only runs if any previous step failed)
       - name: Post failure comment
         if: failure() && (github.event_name == 'issue_comment' || steps.ci_check.outputs.ci_passed == 'true')
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: AI Review
           number: ${{ github.event.pull_request.number || github.event.issue.number }}
