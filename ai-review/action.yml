@@ -24,7 +24,7 @@ inputs:
   max-retries:
     description: Max retries for Codex API requests and streaming connections
     required: false
-    default: '30'
+    default: '10'
   custom-instructions:
     description: Additional reviewer instructions appended to the prompt
     required: false
