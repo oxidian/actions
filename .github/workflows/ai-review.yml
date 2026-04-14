@@ -136,7 +136,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh api repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions \
-            -f content='+1' --silent
+            -f content='eyes' --silent
 
       # Wait for CI checks to pass before running review (skip for manual /review)
       - name: Wait for CI checks
