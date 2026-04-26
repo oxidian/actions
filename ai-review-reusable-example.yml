@@ -23,7 +23,7 @@ jobs:
       responses-api-endpoint: https://your-azure-openai.openai.azure.com/openai/v1/responses
 
       # Optional: The model to use for reviews
-      model: gpt-5.4
+      model: gpt-5.5
 
       # Optional: Effort level (low, medium, high, xhigh)
       effort: xhigh
