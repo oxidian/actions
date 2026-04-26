@@ -11,7 +11,7 @@ on:
         description: OpenAI model to use
         required: false
         type: string
-        default: gpt-5.4
+        default: gpt-5.5
       effort:
         description: Effort level for the review (low, medium, high, xhigh)
         required: false
